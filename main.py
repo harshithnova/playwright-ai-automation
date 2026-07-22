@@ -38,12 +38,12 @@ def build_graph():
     graph.add_node("architecture", architecture_agent)
     graph.add_node("code_gen", code_gen_agent)
     graph.add_node("review", review_agent)
-    graph.add_node("edge_cases", edge_cases_agent)
+    graph.add_node("edge_cases_agent", edge_cases_agent)
     graph.add_node("heal", heal_agent)
 
     graph.set_entry_point("strategy")
     
-    graph.add_edge("edge_cases", "heal")
+    graph.add_edge("edge_cases_agent", "heal")
     graph.add_edge("heal", END)
 
     graph.add_edge("strategy", "architecture")
@@ -61,11 +61,11 @@ def build_graph():
         print(f"[Graph] Current regen count: {regen_count}")
 
         if not state.get("needs_regen", False):
-            return "edge_cases"
+            return "edge_cases_agent"
 
         if regen_count >= MAX_REGEN:
             print("[Graph] Maximum regeneration attempts reached.")
-            return "edge_cases"
+            return "edge_cases_agent"
 
         print(f"[Graph] Regen attempt {regen_count + 1}/{MAX_REGEN}")
         print("[Graph] Routing back to code generation.")
@@ -76,7 +76,7 @@ def build_graph():
         route_after_review,
         {
             "code_gen": "code_gen",
-            "edge_cases": "edge_cases",
+            "edge_cases_agent": "edge_cases_agent",
         },
     )
 
