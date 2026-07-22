@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Document</title>
+</head>
+<body>
+
+<h2>Upload Design Document</h2>
+
+<form action="/upload" method="post" enctype="multipart/form-data">
+
+    <label>Target URL</label><br>
+    <input
+        type="text"
+        name="target_url"
+        placeholder="https://example.com"
+        style="width:500px;"
+    >
+
+    <br><br>
+
+    <input
+        type="file"
+        name="file"
+        required
+    >
+
+    <br><br>
+
+    <button type="submit">
+        Upload
+    </button>
+
+</form>
+
+</body>
+</html>
