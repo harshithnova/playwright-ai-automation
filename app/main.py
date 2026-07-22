@@ -124,13 +124,20 @@ def home(request: Request):
 # -------------------------------------
 # Upload Route
 # -------------------------------------
-
+@app.get("/upload", response_class=HTMLResponse)
+async def upload_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="upload.html",
+        context={
+            "request": request
+        }
+    )
 @app.post("/upload", response_class=HTMLResponse)
 async def upload_document(
     request: Request,
     target_url: str = Form(...),
     file: UploadFile = File(...),
-    _: None = Depends(verify_api_key),
 ):
 
     try:
