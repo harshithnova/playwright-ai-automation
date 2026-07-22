@@ -1,10 +1,17 @@
 import json
+import traceback
+
 from agents.state import AgentState
 from agents.llm_client import get_llm
 from performance.engine import PerformanceTracker
 
+from agentlens.sdk import trace
+from agentlens.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
+@trace(name="edge_cases_agent")
 def edge_cases_agent(state: AgentState) -> AgentState:
 
     tracker = PerformanceTracker(label="edge_cases_agent")
@@ -16,10 +23,8 @@ def edge_cases_agent(state: AgentState) -> AgentState:
         print("[Edge Cases Agent] Running...")
 
         task_plan = state.get("task_plan", [])
-        
 
-        LIVE_EDGE_CASE_PROMPT = """
-
+        LIVE_EDGE_CASE_PROMPT = f"""
 What edge cases are unique to a live IoT dashboard?
 
 - What if a sensor goes offline? (widget shows '--' or 'N/A')
@@ -28,17 +33,16 @@ What edge cases are unique to a live IoT dashboard?
 - What if a chart has no data? (empty state)
 - What if a user navigates during a live refresh?
 
-
 You are a QA Automation Expert for Live IoT dashboards.
 
 Task Plan:
-{task_plan}
+{chr(10).join(task_plan)}
 
 Architecture:
-{architecture_notes}
+{state.get("architecture_notes", "")}
 
 Target URL:
-{target_url}
+{state.get("target_url", "")}
 
 Generate exactly 6 execution-focused edge cases.
 
@@ -60,11 +64,11 @@ Do NOT wrap the JSON inside ```json``` markdown.
 Return exactly this structure:
 
 [
-  {
+  {{
     "id": "EC-01",
     "title": "Sensor offline",
     "description": "Verify the dashboard displays '--' instead of crashing."
-  }
+  }}
 ]
 
 Return exactly 6 objects.
@@ -74,15 +78,7 @@ No explanations.
 No markdown.
 """
 
-        prompt = LIVE_EDGE_CASE_PROMPT.format(
-            task_plan="\n".join(task_plan),
-            architecture_notes=state.get("architecture_notes", ""),
-            target_url=state.get("target_url", ""),
-        )
-        
-        
-        
-        
+        prompt = LIVE_EDGE_CASE_PROMPT
 
         response = llm.invoke(prompt)
 
@@ -92,15 +88,18 @@ No markdown.
             else str(response)
         ).strip()
 
-        # ----------------------------------------------------
-        # Remove Markdown code fences if the LLM returned them
-        # ----------------------------------------------------
+        logger.debug("Raw LLM response:\n%s", text)
 
+        # Remove markdown code fences if present
         if text.startswith("```"):
-            text = text.replace("```json", "")
-            text = text.replace("```JSON", "")
-            text = text.replace("```", "")
-            text = text.strip()
+            text = (
+                text.replace("```json", "")
+                .replace("```JSON", "")
+                .replace("```", "")
+                .strip()
+            )
+
+        logger.debug("Cleaned LLM response:\n%s", text)
 
         try:
 
@@ -116,15 +115,21 @@ No markdown.
                 if not isinstance(case, dict):
                     continue
 
-                cleaned.append({
-                    "id": case.get("id", ""),
-                    "title": case.get("title", ""),
-                    "description": case.get("description", ""),
-                })
+                cleaned.append(
+                    {
+                        "id": case.get("id", ""),
+                        "title": case.get("title", ""),
+                        "description": case.get("description", ""),
+                    }
+                )
 
             edge_cases = cleaned[:6]
 
         except Exception:
+
+            logger.warning(
+                "LLM did not return valid JSON. Falling back to line parser."
+            )
 
             edge_cases = []
 
@@ -151,21 +156,21 @@ No markdown.
             edge_cases = edge_cases[:6]
 
         state["edge_cases"] = edge_cases
-                
-        
-        
-        
-        
-        
 
         print(f"[Edge Cases Agent] Generated {len(edge_cases)} edge cases.")
 
     except Exception as e:
 
-        print("[Edge Cases Error]", e)
+        print("\n========== EDGE CASES ERROR ==========")
+        traceback.print_exc()
+        print("======================================\n")
 
         state["edge_cases"] = [
-            f"Edge case generation failed: {e}"
+            {
+                "id": "ERROR",
+                "title": "Edge case generation failed",
+                "description": str(e),
+            }
         ]
 
     finally:
