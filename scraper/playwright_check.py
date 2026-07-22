@@ -35,12 +35,18 @@ AUTH_STATE = BASE_DIR / "auth.json"
 # since that's where login.py actually is.
 # ----------------------------------------------------------
 try:
-    from login import perform_login
-except ModuleNotFoundError:
-    import sys
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from login import perform_login
+    # When imported as scraper.playwright_check
+    from .login import perform_login
 
+except ImportError:
+    try:
+        # When executed directly from the scraper folder
+        from login import perform_login
+
+    except ImportError as e:
+        raise ImportError(
+            "Unable to import perform_login from login.py"
+        ) from e
 # ----------------------------------------------------------
 # Dashboard / Widget Configuration
 # ----------------------------------------------------------
