@@ -399,21 +399,39 @@
 <pre>{{ agent_review }}</pre>
  
 <h3>Edge Cases</h3>
- 
+
 {% if agent_edge_cases %}
- 
-<ul>
- 
+
+<table>
+
+<thead>
+<tr>
+    <th style="width:12%">ID</th>
+    <th style="width:28%">Title</th>
+    <th>Description</th>
+</tr>
+</thead>
+
+<tbody>
+
 {% for edge in agent_edge_cases %}
-<li>{{ edge }}</li>
+
+<tr>
+    <td>{{ edge.id or "-" }}</td>
+    <td>{{ edge.title or "-" }}</td>
+    <td>{{ edge.description or "-" }}</td>
+</tr>
+
 {% endfor %}
- 
-</ul>
- 
+
+</tbody>
+
+</table>
+
 {% else %}
- 
+
 <p>No edge cases generated.</p>
- 
+
 {% endif %}
  
 </div>
